@@ -22,7 +22,6 @@ def scan_ec2(region, sec_groups):
 
         machines = []
 
-
         logger.debug('Analysing ec2 machines')
         for instance in ec2.instances.all():
             friendly_name = 'Unknown'
@@ -127,17 +126,17 @@ def scan_elb(region, machines):
 
 def scan_all(regions):
 
+
+    for region in regions:
+        logger.info('\n----------------')
+        logger.info(f'Scanning {region}')
         try:
-            for region in regions:
-                logger.info('\n----------------')
-                logger.info(f'Scanning {region}')
+            sec_groups = get_security_groups(region)
+            machines = scan_ec2(region,sec_groups)
 
-                sec_groups = get_security_groups(region)
-                machines = scan_ec2(region,sec_groups)
-
-                logger.info(f'found EC2 machines {len(machines)}')
-                scan_elb(region, machines)
-                scan_rds(region, sec_groups)
+            logger.info(f'found EC2 machines {len(machines)}')
+            scan_elb(region, machines)
+            scan_rds(region, sec_groups)
 
         except ClientError as ce:
             logger.error(f'error accessing ec2 on [{region}]')
