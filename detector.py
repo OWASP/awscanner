@@ -1,6 +1,9 @@
 import argparse
 import sys
+import os
 import textwrap
+import csv
+import json
 
 import boto3
 from botocore.exceptions import ClientError
@@ -8,13 +11,35 @@ from loguru import logger
 
 from __version__ import _version
 
-DEBUG = True
+DEBUG = False
+RESULTS = 'results'
 
 logger.remove()
 if DEBUG:
     logger.add(sys.stderr, level="DEBUG")
 else:
     logger.add(sys.stderr, level="INFO")
+
+
+def get_security_groups(region):
+    ec2_client = boto3.client('ec2', region_name=region)
+    sec_groups = ec2_client.describe_security_groups()['SecurityGroups']
+    logger.warning('Analysing security group for public access ')
+    for key, g in enumerate(sec_groups):
+        try:
+            sec_groups[key]['has_pub_access'] = False
+            for permissions in g['IpPermissions']:
+                for ip_range in permissions['IpRanges']:
+                    if ip_range['CidrIp'] == '0.0.0.0/0':
+                        sec_groups[key]['has_pub_access'] = True
+                        logger.warning(f'Group {sec_groups[key]["GroupName"]} - HAS public access')
+                        logger.warning(f'Group Description: {sec_groups[key]["Description"]}')
+                    else:
+                        logger.debug(f'Group {sec_groups[key]["GroupName"]} - No public access')
+        except TypeError:
+            continue
+    logger.debug(sec_groups)
+    return sec_groups
 
 
 def scan_ec2(region, sec_groups):
@@ -43,7 +68,7 @@ def scan_ec2(region, sec_groups):
                                 if port == 0:
                                     port = 'any'
                                 port_string = f'{port}/{p["IpProtocol"]}'
-                            except:
+                            except KeyError:
                                 protocol = p["IpProtocol"]
                                 if protocol == '-1':
                                     protocol = 'any'
@@ -65,27 +90,6 @@ def scan_ec2(region, sec_groups):
             machines.append(detected)
 
         return machines
-
-
-def get_security_groups(region):
-    ec2_client = boto3.client('ec2', region_name=region)
-    sec_groups = ec2_client.describe_security_groups()['SecurityGroups']
-    logger.warning('Analysing security group for public access ')
-    for key, g in enumerate(sec_groups):
-        try:
-            sec_groups[key]['has_pub_access'] = False
-            for permissions in g['IpPermissions']:
-                for ip_range in permissions['IpRanges']:
-                    if ip_range['CidrIp'] == '0.0.0.0/0':
-                        sec_groups[key]['has_pub_access'] = True
-                        logger.warning(f'Group {sec_groups[key]["GroupName"]} - HAS public access')
-                        logger.warning(f'Group Description: {sec_groups[key]["Description"]}')
-                    else:
-                        logger.debug(f'Group {sec_groups[key]["GroupName"]} - No public access')
-        except TypeError:
-            continue
-    logger.debug(sec_groups)
-    return sec_groups
 
 
 def scan_rds(region, sec_groups):
@@ -124,22 +128,51 @@ def scan_elb(region, machines):
                     logger.debug(f'Adding DNS name to machine {m["id"]} : {elb["DNSName"]} ')
 
 
+def make_dirs(region):
+
+    if not os.path.exists(RESULTS):
+        os.makedirs(RESULTS)
+    region_path = os.path.join(RESULTS, region)
+    if not os.path.exists(region_path):
+        os.makedirs(region_path)
+    return region_path
+
+
 def scan_all(regions):
     for region in regions:
         logger.info('\n----------------')
         logger.info(f'Scanning {region}')
         try:
             sec_groups = get_security_groups(region)
-            machines = scan_ec2(region,sec_groups)
+            machines = scan_ec2(region, sec_groups)
 
             logger.info(f'found EC2 machines {len(machines)}')
+            rds = scan_rds(region, sec_groups)
             scan_elb(region, machines)
-            scan_rds(region, sec_groups)
+            machines = machines + rds
+            if len(machines) > 0:
+                path = make_dirs(region)
+                write_to_file(machines, path, 'machines_and_rds.csv')
+
+            if len(sec_groups) > 0:
+                path = make_dirs(region)
+                with open(os.path.join(path, 'security_groups.json'), 'w') as outfile:
+                    json.dump(sec_groups, outfile)
+
 
         except ClientError as ce:
             logger.error(f'error accessing ec2 on [{region}]')
             logger.debug(ce.response['Error']['Code'])
             logger.debug(ce.response['Error']['Message'])
+
+
+def write_to_file(machines, path, filename):
+    with open(os.path.join(path, filename), 'w', newline='') as output:
+        names = list(machines[0].keys())
+        writer = csv.DictWriter(output, fieldnames=names)
+        writer.writeheader()
+        for m in machines:
+            writer.writerow(m)
 
 
 if __name__ == '__main__':

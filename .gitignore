@@ -1,2 +1,5 @@
 /venv/
 /forme.md
+/results/
+/__pycache__/
+/output.csv
