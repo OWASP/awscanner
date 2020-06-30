@@ -125,8 +125,6 @@ def scan_elb(region, machines):
 
 
 def scan_all(regions):
-
-
     for region in regions:
         logger.info('\n----------------')
         logger.info(f'Scanning {region}')
@@ -157,7 +155,15 @@ if __name__ == '__main__':
          description=textwrap.dedent('''\
          Common Usages
          --------------------------------
-             %(prog)s 
+         
+                                                    
+              __ ___      _____  ___ __ _ _ __  _ __   ___ _ __ 
+             / _` \ \ /\ / / __|/ __/ _` | '_ \| '_ \ / _ \ '__|
+            | (_| |\ V  V /\__ \ (_| (_| | | | | | | |  __/ |   
+             \__,_| \_/\_/ |___/\___\__,_|_| |_|_| |_|\___|_|   
+                                                                
+
+             %(prog)s --scan-all
         '''))
 
     parser.add_argument('--version', action='version', version='%(prog)s ' + _version)
@@ -166,6 +172,7 @@ if __name__ == '__main__':
                         default='scan-all')
     parser.add_argument('--region', type=str, action='store', choices=aws_regions.keys(), default='')
 
+    parser.print_help()
     results = parser.parse_args()
 
     # prepare
