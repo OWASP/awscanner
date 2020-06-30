@@ -1,5 +1,6 @@
 # awscanner
 Finds internet-exposed resources in an AWS account.
+Results of the scan will be put in the results folder
 
 # Installation
 ```shell script

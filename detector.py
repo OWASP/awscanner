@@ -9,7 +9,7 @@ import boto3
 from botocore.exceptions import ClientError
 from loguru import logger
 
-from __version__ import _version
+from __version__ import __version__
 
 DEBUG = False
 RESULTS = 'results'
