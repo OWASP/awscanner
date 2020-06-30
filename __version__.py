@@ -6,7 +6,7 @@
 
 __version__ = '0.9'
 __title__ = 'awscanner'
-__description__ = 'sacans the aws account for exposed objects.'
+__description__ = 'scans the aws account for exposed objects.'
 __author__ = 'Ilya Chernyakov'
 __author_email__ = 'eliuha@gmail.com'
 __license__ = 'Apache 2.0'
