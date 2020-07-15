@@ -199,7 +199,7 @@ if __name__ == '__main__':
              %(prog)s --scan-all
         '''))
 
-    parser.add_argument('--version', action='version', version='%(prog)s ' + _version)
+    parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
     parser.add_argument('--action', type=str, action='store', help='Working mode: show-event show-stats show-dates',
                         choices=['scan-all', 'print-regions'],
                         default='scan-all')
