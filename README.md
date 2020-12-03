@@ -2,6 +2,8 @@
 Finds internet-exposed resources in an AWS account.
 Results of the scan will be put in the results folder
 
+https://owasp.org/www-project-awscanner/
+
 # Installation
 ```shell script
 git clone git@gitlab.com:eliuha/awscanner.git
