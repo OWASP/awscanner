@@ -7,7 +7,7 @@ https://owasp.org/www-project-awscanner/
 
 # Installation
 ```shell script
-git clone git@gitlab.com:eliuha/awscanner.git
+git clone https://github.com/OWASP/awscanner.git
 pip install aws-shell
 cd awscanner
 pip install -r requirements.txt 
